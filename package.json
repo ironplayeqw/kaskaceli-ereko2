@@ -1,0 +1,14 @@
+{
+  "name": "kaskaceli-ereko",
+  "version": "1.0.0",
+  "description": "Kaskaceli Ereko multiplayer spy game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  }
+}

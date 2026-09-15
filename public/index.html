@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Kaskaceli Ereko</title>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family:
+        Arial,
+        sans-serif;
+
+    min-height: 100vh;
+
+    background:
+        radial-gradient(
+            circle at top,
+            #30275c,
+            #11111d 60%,
+            #08080e
+        );
+
+    color: white;
+}
+
+.container {
+    width: min(900px, 94%);
+    margin: auto;
+    padding: 30px 0;
+}
+
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+    animation: appear .35s ease;
+}
+
+@keyframes appear {
+
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+.logo {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.logo-icon {
+    font-size: 70px;
+}
+
+h1 {
+    font-size: clamp(38px, 8vw, 65px);
+
+    background:
+        linear-gradient(
+            90deg,
+            #8b5cf6,
+            #ec4899,
+            #22d3ee
+        );
+
+    -webkit-background-clip: text;
+    color: transparent;
+
+    margin: 10px 0;
+}
+
+.card {
+    background: rgba(27,27,48,.9);
+    border: 1px solid #3b3b5c;
+    border-radius: 24px;
+    padding: 25px;
+    margin: 20px 0;
+
+    box-shadow:
+        0 20px 60px
+        rgba(0,0,0,.35);
+}
+
+input {
+    width: 100%;
+    padding: 15px;
+
+    margin: 8px 0;
+
+    background: #151522;
+    border: 1px solid #41415d;
+
+    color: white;
+
+    border-radius: 12px;
+
+    font-size: 16px;
+}
+
+button {
+    width: 100%;
+
+    padding: 15px;
+
+    margin-top: 10px;
+
+    border: 0;
+
+    border-radius: 13px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #7c3aed,
+            #db2777
+        );
+
+    color: white;
+
+    font-weight: bold;
+
+    font-size: 16px;
+
+    cursor: pointer;
+}
+
+button:hover {
+    transform: translateY(-2px);
+}
+
+.secondary {
+    background: #303047;
+}
+
+.success {
+    background:
+        linear-gradient(
+            135deg,
+            #059669,
+            #047857
+        );
+}
+
+.danger {
+    background:
+        linear-gradient(
+            135deg,
+            #dc2626,
+            #991b1b
+        );
+}
+
+.center {
+    text-align: center;
+}
+
+.room-code {
+    font-size: 48px;
+    font-weight: bold;
+    letter-spacing: 8px;
+    color: #22d3ee;
+    margin: 15px 0;
+}
+
+.qr {
+    display: flex;
+    justify-content: center;
+    margin: 20px;
+}
+
+.qr canvas {
+    border-radius: 15px;
+    padding: 10px;
+    background: white;
+}
+
+.players {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(150px,1fr)
+        );
+
+    gap: 12px;
+}
+
+.player {
+    background: #202039;
+
+    border-radius: 14px;
+
+    padding: 15px;
+
+    border: 1px solid #393955;
+}
+
+.connected {
+    color: #34d399;
+}
+
+.disconnected {
+    color: #f87171;
+}
+
+.big-icon {
+    font-size: 80px;
+}
+
+.word {
+    font-size: 45px;
+    color: #22d3ee;
+    font-weight: bold;
+    margin: 25px 0;
+}
+
+.spy {
+    color: #fb7185;
+}
+
+.timer {
+    font-size: 55px;
+    font-weight: bold;
+    color: #22d3ee;
+}
+
+.vote {
+    background: #25253e;
+    border: 2px solid transparent;
+}
+
+.vote.selected {
+    border-color: #ec4899;
+}
+
+.score {
+    display: flex;
+    justify-content: space-between;
+
+    background: #22223a;
+
+    padding: 15px;
+
+    margin: 8px 0;
+
+    border-radius: 12px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.error {
+    color: #fb7185;
+    margin: 10px 0;
+}
+
+.small {
+    color: #aaaac2;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- HOME -->
+
+<section id="home" class="screen active">
+
+    <div class="logo">
+
+        <div class="logo-icon">
+            🕵️
+        </div>
+
+        <h1>
+            Kaskaceli Ereko
+        </h1>
+
+        <p class="small">
+            Կասկածելի Երեկո
+        </p>
+
+    </div>
+
+    <div class="card">
+
+        <h2>
+            💻 Ստեղծեք սենյակ
+        </h2>
+
+        <input
+            id="hostName"
+            placeholder="Your name"
+        >
+
+        <button onclick="createRoom()">
+            🚀 Ստեղծել սենյակ
+        </button>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>
+            📱 Միանալ սենյակին
+        </h2>
+
+        <input
+            id="roomInput"
+            placeholder="Room code"
+            maxlength="4"
+        >
+
+        <input
+            id="playerName"
+            placeholder="Your name"
+        >
+
+        <button onclick="joinRoom()">
+            🎮 Միացե՛ք խաղին
+        </button>
+
+    </div>
+
+    <p
+        id="error"
+        class="error center"
+    ></p>
+
+</section>
+
+
+<!-- LOBBY -->
+
+<section id="lobby" class="screen">
+
+    <div class="card center">
+
+        <div class="big-icon">
+            📱
+        </div>
+
+        <h2>
+            Խաղային սենյակ
+        </h2>
+
+        <div
+            id="roomCode"
+            class="room-code"
+        ></div>
+
+        <p>
+            Սկանավորեք այս QR կոդը
+        </p>
+
+        <div class="qr">
+            <canvas id="qrCanvas"></canvas>
+        </div>
+
+        <p class="small">
+            Բոլորը պետք է միացված լինեն նույն Wi-Fi ցանցին.
+        </p>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>
+            👥 Խաղացողներ
+        </h2>
+
+        <br>
+
+        <div
+            id="playerList"
+            class="players"
+        ></div>
+
+    </div>
+
+
+    <div
+        id="hostControls"
+        class="card hidden"
+    >
+
+        <button
+            class="success"
+            onclick="startGame()"
+        >
+            🚀 Սկսել խաղը
+        </button>
+
+        <p class="small center">
+            Նվազագույնը 4 խաղացող
+        </p>
+
+    </div>
+
+</section>
+
+
+<!-- ROLE -->
+
+<section id="role" class="screen">
+
+    <div class="card center">
+
+        <div
+            id="roleIcon"
+            class="big-icon"
+        >
+            🔐
+        </div>
+
+        <h2 id="roleTitle">
+            Ձեր դերը
+        </h2>
+
+        <p id="roleDescription"></p>
+
+        <div
+            id="secretWord"
+            class="word"
+        ></div>
+
+        <p class="small">
+            Այս էկրանը ոչ մեկին մի ցուցադրեք:
+        </p>
+
+        <button
+            onclick="hideRole()"
+            class="secondary"
+        >
+            🔒 Թաքցնել դերը
+        </button>
+
+    </div>
+
+</section>
+
+
+<!-- DISCUSSION -->
+
+<section id="discussion" class="screen">
+
+    <div class="card center">
+
+        <div class="big-icon">
+            💬
+        </div>
+
+        <h2>
+            Քննարկում
+        </h2>
+
+        <p>
+            Տվեք հուշումներ և գտեք լրտեսին։
+        </p>
+
+        <div
+            id="timer"
+            class="timer"
+        >
+            02:00
+        </div>
+
+        <button
+            id="hostVotingButton"
+            class="success hidden"
+            onclick="startVoting()"
+        >
+            🗳️ Սկսել քվեարկությունը
+        </button>
+
+    </div>
+
+</section>
+
+
+<!-- VOTING -->
+
+<section id="voting" class="screen">
+
+    <div class="card">
+
+        <div class="center">
+
+            <div class="big-icon">
+                🗳️
+            </div>
+
+            <h2>
+                Ո՞վ է լրտեսը։
+            </h2>
+
+            <p class="small">
+                Ընտրեք մեկ խաղացող:
+            </p>
+
+        </div>
+
+        <div
+            id="voteList"
+            class="players"
+        ></div>
+
+        <button
+            class="danger"
+            onclick="sendVote()"
+        >
+            🔍 Հաստատել քվեարկությունը
+        </button>
+
+        <p
+            id="voteStatus"
+            class="small center"
+        ></p>
+
+    </div>
+
+</section>
+
+
+<!-- RESULT -->
+
+<section id="result" class="screen">
+
+    <div class="card center">
+
+        <div
+            id="resultIcon"
+            class="big-icon"
+        >
+            🎭
+        </div>
+
+        <h2 id="resultTitle">
+            Արդյունք
+        </h2>
+
+        <p id="resultText"></p>
+
+        <div
+            id="resultWord"
+            class="word"
+        ></div>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>
+            🏆 Միավոր
+        </h2>
+
+        <div id="scores"></div>
+
+    </div>
+
+
+    <div
+        id="nextRoundBox"
+        class="card hidden"
+    >
+
+        <button
+            class="success"
+            onclick="nextRound()"
+        >
+            🔄 Հաջորդ փուլ
+        </button>
+
+    </div>
+
+</section>
+
+</div>
+
+
+<script>
+
+const socket = io();
+
+let roomCode = null;
+let isHost = false;
+let players = [];
+let selectedVote = null;
+
+let timer = 120;
+let timerInterval = null;
+
+
+/* ======================
+   SCREEN
+====================== */
+
+function showScreen(id) {
+
+    document
+        .querySelectorAll(".screen")
+        .forEach(s =>
+            s.classList.remove("active")
+        );
+
+    document
+        .getElementById(id)
+        .classList.add("active");
+
+}
+
+
+/* ======================
+   CREATE ROOM
+====================== */
+
+function createRoom() {
+
+    const name =
+        document
+            .getElementById("hostName")
+            .value
+            .trim();
+
+    socket.emit("createRoom", {
+        name: name || "Host"
+    });
+
+}
+
+
+/* ======================
+   JOIN ROOM
+====================== */
+
+function joinRoom() {
+
+    const code =
+        document
+            .getElementById("roomInput")
+            .value
+            .trim()
+            .toUpperCase();
+
+    const name =
+        document
+            .getElementById("playerName")
+            .value
+            .trim();
+
+    socket.emit("joinRoom", {
+        code,
+        name
+    });
+
+}
+
+
+/* ======================
+   ROOM CREATED
+====================== */
+
+socket.on("roomCreated", data => {
+
+    roomCode = data.code;
+    isHost = data.host;
+
+    openLobby();
+
+});
+
+
+/* ======================
+   JOINED
+====================== */
+
+socket.on("joinedRoom", data => {
+
+    roomCode = data.code;
+    isHost = data.host;
+
+    openLobby();
+
+});
+
+
+/* ======================
+   LOBBY
+====================== */
+
+function openLobby() {
+
+    showScreen("lobby");
+
+    document
+        .getElementById("roomCode")
+        .textContent = roomCode;
+
+    document
+        .getElementById("hostControls")
+        .classList.toggle(
+            "hidden",
+            !isHost
+        );
+
+    createQR();
+
+}
+
+
+/* ======================
+   QR CODE
+====================== */
+
+function createQR() {
+
+    const canvas =
+        document.getElementById("qrCanvas");
+
+    const url =
+        window.location.origin +
+        "?room=" +
+        roomCode;
+
+    QRCode.toCanvas(
+        canvas,
+        url,
+        {
+            width: 240,
+            margin: 2
+        }
+    );
+
+}
+
+
+/* ======================
+   ROOM STATE
+====================== */
+
+socket.on("roomState", state => {
+
+    roomCode = state.code;
+
+    players = state.players;
+
+    updatePlayers();
+
+    if (state.phase === "discussion") {
+
+        showScreen("discussion");
+
+        if (isHost) {
+
+            document
+                .getElementById(
+                    "hostVotingButton"
+                )
+                .classList.remove("hidden");
+
+        }
+
+        startTimer();
+
+    }
+
+    if (state.phase === "voting") {
+
+        showVoting();
+
+    }
+
+});
+
+
+/* ======================
+   PLAYERS
+====================== */
+
+function updatePlayers() {
+
+    const list =
+        document.getElementById(
+            "playerList"
+        );
+
+    list.innerHTML = "";
+
+    players.forEach((player, index) => {
+
+        const div =
+            document.createElement("div");
+
+        div.className = "player";
+
+        div.innerHTML = `
+            <strong>
+                ${index + 1}. ${player.name}
+            </strong>
+            <br>
+            <span class="${
+                player.connected
+                    ? "connected"
+                    : "disconnected"
+            }">
+                ${
+                    player.connected
+                        ? "● Online"
+                        : "● Offline"
+                }
+            </span>
+        `;
+
+        list.appendChild(div);
+
+    });
+
+}
+
+
+/* ======================
+   START GAME
+====================== */
+
+function startGame() {
+
+    socket.emit(
+        "startGame",
+        {
+            code: roomCode
+        }
+    );
+
+}
+
+
+/* ======================
+   ROLE
+====================== */
+
+socket.on("role", data => {
+
+    showScreen("role");
+
+    const icon =
+        document.getElementById(
+            "roleIcon"
+        );
+
+    const title =
+        document.getElementById(
+            "roleTitle"
+        );
+
+    const description =
+        document.getElementById(
+            "roleDescription"
+        );
+
+    const word =
+        document.getElementById(
+            "secretWord"
+        );
+
+    if (data.spy) {
+
+        icon.textContent = "🕵️";
+
+        title.textContent =
+            "YOU ARE THE SPY";
+
+        title.classList.add("spy");
+
+        description.textContent =
+            "You don't know the secret word. Listen carefully and try to figure it out.";
+
+        word.textContent =
+            "???";
+
+        word.classList.add("spy");
+
+    } else {
+
+        icon.textContent = "🔐";
+
+        title.textContent =
+            "YOU ARE NOT THE SPY";
+
+        title.classList.remove("spy");
+
+        description.textContent =
+            "Give clues without making the spy understand the word.";
+
+        word.textContent =
+            data.word;
+
+        word.classList.remove("spy");
+
+    }
+
+});
+
+
+function hideRole() {
+
+    showScreen("discussion");
+
+}
+
+
+/* ======================
+   TIMER
+====================== */
+
+function startTimer() {
+
+    clearInterval(timerInterval);
+
+    timer = 120;
+
+    updateTimer();
+
+    timerInterval =
+        setInterval(() => {
+
+            timer--;
+
+            updateTimer();
+
+            if (timer <= 0) {
+
+                clearInterval(
+                    timerInterval
+                );
+
+            }
+
+        }, 1000);
+
+}
+
+
+function updateTimer() {
+
+    const min =
+        Math.floor(timer / 60)
+            .toString()
+            .padStart(2, "0");
+
+    const sec =
+        (timer % 60)
+            .toString()
+            .padStart(2, "0");
+
+    document
+        .getElementById("timer")
+        .textContent =
+        `${min}:${sec}`;
+
+}
+
+
+/* ======================
+   START VOTING
+====================== */
+
+function startVoting() {
+
+    socket.emit(
+        "startVoting",
+        {
+            code: roomCode
+        }
+    );
+
+}
+
+
+/* ======================
+   VOTING
+====================== */
+
+function showVoting() {
+
+    clearInterval(timerInterval);
+
+    showScreen("voting");
+
+    selectedVote = null;
+
+    const list =
+        document.getElementById(
+            "voteList"
+        );
+
+    list.innerHTML = "";
+
+    players.forEach(player => {
+
+        const button =
+            document.createElement("button");
+
+        button.className = "vote";
+
+        button.textContent =
+            player.name;
+
+        button.onclick = () => {
+
+            selectedVote =
+                player.id;
+
+            document
+                .querySelectorAll(".vote")
+                .forEach(
+                    b =>
+                        b.classList.remove(
+                            "selected"
+                        )
+                );
+
+            button.classList.add(
+                "selected"
+            );
+
+        };
+
+        list.appendChild(button);
+
+    });
+
+}
+
+
+function sendVote() {
+
+    if (!selectedVote) {
+
+        alert(
+            "Choose a player first."
+        );
+
+        return;
+
+    }
+
+    socket.emit(
+        "vote",
+        {
+            code: roomCode,
+            targetId: selectedVote
+        }
+    );
+
+    document
+        .getElementById("voteStatus")
+        .textContent =
+        "Vote submitted ✓";
+
+}
+
+
+/* ======================
+   VOTE UPDATE
+====================== */
+
+socket.on("voteUpdate", data => {
+
+    document
+        .getElementById("voteStatus")
+        .textContent =
+        `Votes: ${data.count}/${data.total}`;
+
+});
+
+
+/* ======================
+   RESULT
+====================== */
+
+socket.on("result", data => {
+
+    showScreen("result");
+
+    const icon =
+        document.getElementById(
+            "resultIcon"
+        );
+
+    const title =
+        document.getElementById(
+            "resultTitle"
+        );
+
+    if (data.spyFound) {
+
+        icon.textContent = "🎉";
+
+        title.textContent =
+            "TEAM WINS!";
+
+    } else {
+
+        icon.textContent = "🕵️";
+
+        title.textContent =
+            "SPY WINS!";
+
+    }
+
+    document
+        .getElementById("resultText")
+        .innerHTML =
+        `
+        The spy was
+        <strong>${data.spyName}</strong>.
+        <br><br>
+        The team voted for
+        <strong>${data.selectedName || "Nobody"}</strong>.
+        `;
+
+    document
+        .getElementById("resultWord")
+        .textContent =
+        data.word;
+
+    players = data.players;
+
+    showScores();
+
+    document
+        .getElementById(
+            "nextRoundBox"
+        )
+        .classList.toggle(
+            "hidden",
+            !isHost
+        );
+
+});
+
+
+/* ======================
+   SCORE
+====================== */
+
+function showScores() {
+
+    const box =
+        document.getElementById(
+            "scores"
+        );
+
+    box.innerHTML = "";
+
+    [...players]
+        .sort(
+            (a,b) =>
+                b.score - a.score
+        )
+        .forEach((player,index) => {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+            div.className = "score";
+
+            div.innerHTML =
+                `
+                <span>
+                    ${index + 1}.
+                    ${player.name}
+                </span>
+
+                <strong>
+                    ${player.score} ⭐
+                </strong>
+                `;
+
+            box.appendChild(div);
+
+        });
+
+}
+
+
+/* ======================
+   NEXT ROUND
+====================== */
+
+function nextRound() {
+
+    socket.emit(
+        "nextRound",
+        {
+            code: roomCode
+        }
+    );
+
+}
+
+
+/* ======================
+   ERROR
+====================== */
+
+socket.on("errorMessage", message => {
+
+    document
+        .getElementById("error")
+        .textContent = message;
+
+});
+
+
+/* ======================
+   AUTO ROOM FROM QR
+====================== */
+
+const params =
+    new URLSearchParams(
+        window.location.search
+    );
+
+const qrRoom =
+    params.get("room");
+
+if (qrRoom) {
+
+    document
+        .getElementById("roomInput")
+        .value =
+        qrRoom.toUpperCase();
+
+}
+
+</script>
+
+</body>
+</html>
